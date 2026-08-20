@@ -682,7 +682,7 @@
         <p class="hero-sub-text">Nous avons 12 beef burger patties. Toutes ont été choisies avec une vraie intention. Répondez à 7 questions courtes et découvrez les 3 patties conçues pour vous.</p>
 
         <div class="hero-actions">
-          <button class="hero-start" type="button" onclick="document.querySelector('[data-step=&quot;0&quot;]').scrollIntoView({behavior:'smooth', block:'start'})">Trouver mes meilleurs matchs →</button>
+          <button class="hero-start" type="button" id="heroStart">Trouver mes meilleurs matchs →</button>
           <span class="hero-micro">En moins de 2 minutes. Aucune donnée nécessaire pour voir votre résultat.</span>
         </div>
       </div>
@@ -850,6 +850,7 @@
                     <input type="hidden" id="sizeField" name="gewenst_formaat" value="">
                     <input type="hidden" id="teamField" name="keukenteam" value="">
                     <input type="hidden" id="preparationField" name="bereiding" value="">
+                    <input type="hidden" id="identifier" name="identifier" value="patty-keuzehulp-fr" />
 
                     <div class="send-row">
                       <button class="btn send-btn" id="mailBtn" type="submit">✉ Demander des échantillons</button>
@@ -1327,6 +1328,16 @@
       formStatus.className="form-status";
       showStep(0);
     }
+    function startQuiz(){
+      const target=document.querySelector('[data-step="0"]');
+      if(!target) return;
+      const top=Math.max(0, target.getBoundingClientRect().top+(window.pageYOffset||document.documentElement.scrollTop||0)-12);
+      try{ window.scrollTo({top:top,behavior:"smooth"}); }catch(e){ window.scrollTo(0,top); }
+      if(window.parent && window.parent!==window){
+        window.parent.postMessage({type:"scroll-to-offset",offset:top},"https://www.la-streetfood.com");
+      }
+    }
+    document.getElementById("heroStart").addEventListener("click",startQuiz);
     document.getElementById("restartTop").addEventListener("click",restart);
     document.getElementById("restartBottom").addEventListener("click",restart);
 
