@@ -1331,11 +1331,23 @@
     function startQuiz(){
       const target=document.querySelector('[data-step="0"]');
       if(!target) return;
-      const top=Math.max(0, target.getBoundingClientRect().top+(window.pageYOffset||document.documentElement.scrollTop||0)-12);
-      try{ window.scrollTo({top:top,behavior:"smooth"}); }catch(e){ window.scrollTo(0,top); }
-      if(window.parent && window.parent!==window){
-        window.parent.postMessage({type:"scroll-to-offset",offset:top},"https://www.la-streetfood.com");
-      }
+      const before=window.pageYOffset||document.documentElement.scrollTop||0;
+      const top=Math.max(0, target.getBoundingClientRect().top+before-12);
+      /* Stap 1: scrollIntoView (werkt op Android en desktop, ook in geneste containers) */
+      try{ target.scrollIntoView({behavior:"smooth",block:"start"}); }catch(e){ target.scrollIntoView(true); }
+      /* Stap 2: als er niets gebeurde (iOS Safari), probeer window.scrollTo */
+      setTimeout(function(){
+        const after=window.pageYOffset||document.documentElement.scrollTop||0;
+        if(Math.abs(after-before)>2) return;
+        try{ window.scrollTo({top:top,behavior:"smooth"}); }catch(e2){ window.scrollTo(0,top); }
+        /* Stap 3: als de pagina zelf niet kan scrollen (uitgerekt iframe), vraag de bovenliggende pagina */
+        setTimeout(function(){
+          const finalPos=window.pageYOffset||document.documentElement.scrollTop||0;
+          if(Math.abs(finalPos-before)<=2 && window.parent && window.parent!==window){
+            window.parent.postMessage({type:"scroll-to-offset",offset:top},"*");
+          }
+        },250);
+      },300);
     }
     document.getElementById("heroStart").addEventListener("click",startQuiz);
     document.getElementById("restartTop").addEventListener("click",restart);
