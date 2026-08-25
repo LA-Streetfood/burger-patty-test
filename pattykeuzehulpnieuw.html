@@ -33,7 +33,8 @@
       min-height:100vh;
     }
     button,input,select,textarea{font:inherit}
-    button{cursor:pointer}
+    button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:rgba(15,92,69,.18)}
+    a{touch-action:manipulation}
     .shell{max-width:1120px;margin:0 auto;padding:24px}
     .hero{
       position:relative;
@@ -1043,11 +1044,28 @@
         state.step <= totalQuestions ? `Vraag ${state.step} van ${totalQuestions}` : "Jouw advies is klaar";
     }
 
+    function isEmbedded(){
+      try{ return window.parent && window.parent!==window; }catch(e){ return false; }
+    }
+
+    function scrollToElement(el){
+      if(!el) return;
+      const top=Math.max(0, el.getBoundingClientRect().top+(window.pageYOffset||document.documentElement.scrollTop||0)-12);
+      try{ window.scrollTo({top:top,behavior:"smooth"}); }catch(e){ window.scrollTo(0,top); }
+      if(isEmbedded()){
+        // Inside the iframe on la-streetfood.com the iframe is as tall as its
+        // content, so only the parent page can actually scroll.
+        try{ el.scrollIntoView({block:"start"}); }
+        catch(e){ try{ el.scrollIntoView(true); }catch(e2){} }
+        try{ window.parent.postMessage({type:"scroll-to-offset",offset:top},"https://www.la-streetfood.com"); }catch(e){}
+      }
+    }
+
     function showStep(n){
       state.step=n;
       steps.forEach(s=>s.classList.toggle("active", Number(s.dataset.step)===n));
       updateProgress();
-      window.scrollTo({top:document.querySelector(".main-card").offsetTop-8,behavior:"smooth"});
+      scrollToElement(document.querySelector(".main-card"));
       if(n===8) renderResults();
     }
 
@@ -1159,7 +1177,7 @@
       }
 
       const valid=burgers.filter(b=>scores[b.id]>-900).sort((x,y)=>scores[y.id]-scores[x.id]);
-      const max=valid[0]?.id ? scores[valid[0].id] : 1;
+      const max=(valid.length ? scores[valid[0].id] : 1) || 1;
       const top=valid.slice(0,3).map((b,i)=>{
         const raw=scores[b.id];
         let pct=Math.round(72+(raw/max)*24-(i*2));
@@ -1197,11 +1215,16 @@
       return [...new Set(reasons)].slice(0,3);
     }
 
+    function selectedText(stepNr){
+      const el=document.querySelector('[data-step="'+stepNr+'"] .option.selected b');
+      return el ? el.textContent : "";
+    }
+
     function renderResults(){
       const top=calculate();
       const prefs=preferenceLabels();
       const summary=document.getElementById("summaryBox");
-      summary.innerHTML=`<div class="bubble">🎯</div><div><strong>We hebben je begrepen.</strong>Je zoekt vooral ${prefs.length?prefs.join(", "):"een passende burger"}, binnen een ${document.querySelector(`[data-step="2"] .option.selected b`)?.textContent.toLowerCase()||"passende formule"}.</div>`;
+      summary.innerHTML=`<div class="bubble">🎯</div><div><strong>We hebben je begrepen.</strong>Je zoekt vooral ${prefs.length?prefs.join(", "):"een passende burger"}, binnen een ${selectedText(2)?selectedText(2).toLowerCase():"passende formule"}.</div>`;
 
       const results=document.getElementById("results");
       results.innerHTML=top.map((b,i)=>`
@@ -1244,10 +1267,10 @@
         "Mijn belangrijkste voorkeuren:",
         preferenceLabels().join(", ") || "-",
         "",
-        `Formule: ${document.querySelector('[data-step="2"] .option.selected b')?.textContent||"-"}`,
-        `Gewenst formaat: ${document.querySelector('[data-step="3"] .option.selected b')?.textContent||"-"}`,
-        `Keukenteam: ${document.querySelector('[data-step="4"] .option.selected b')?.textContent||"-"}`,
-        `Bereiding: ${document.querySelector('[data-step="5"] .option.selected b')?.textContent||"-"}`,
+        `Formule: ${selectedText(2)||"-"}`,
+        `Gewenst formaat: ${selectedText(3)||"-"}`,
+        `Keukenteam: ${selectedText(4)||"-"}`,
+        `Bereiding: ${selectedText(5)||"-"}`,
         "",
         `Naam: ${document.getElementById("name").value||"-"}`,
         `Bedrijfsnaam: ${document.getElementById("company").value||"-"}`,
@@ -1277,10 +1300,10 @@
       document.getElementById("selectedSamplesField").value=samples.map(b=>b.name).join(", ");
       document.getElementById("matchesField").value=samples.map(b=>`${b.name}: ${b.pct}%`).join(", ");
       document.getElementById("prioritiesField").value=preferenceLabels().join(", ");
-      document.getElementById("formulaField").value=document.querySelector('[data-step="2"] .option.selected b')?.textContent||"";
-      document.getElementById("sizeField").value=document.querySelector('[data-step="3"] .option.selected b')?.textContent||"";
-      document.getElementById("teamField").value=document.querySelector('[data-step="4"] .option.selected b')?.textContent||"";
-      document.getElementById("preparationField").value=document.querySelector('[data-step="5"] .option.selected b')?.textContent||"";
+      document.getElementById("formulaField").value=selectedText(2);
+      document.getElementById("sizeField").value=selectedText(3);
+      document.getElementById("teamField").value=selectedText(4);
+      document.getElementById("preparationField").value=selectedText(5);
     }
 
     function formDataToJson(form){
@@ -1337,7 +1360,7 @@
 
     document.getElementById("copyBtn").addEventListener("click",async()=>{
       try{await navigator.clipboard.writeText(buildMailBody());showToast("Uitslag gekopieerd.");}
-      catch{showToast("Kopiëren lukte niet in deze browser.");}
+      catch(e){showToast("Kopiëren lukte niet in deze browser.");}
     });
 
     function showToast(text){
@@ -1348,7 +1371,7 @@
     function restart(){
       state.step=0;state.answers={};
       document.querySelectorAll(".option").forEach(o=>o.classList.remove("selected"));
-      document.querySelectorAll("[data-next]").forEach(b=>{ if(b.closest(".step")?.dataset.step!=="0") b.disabled=true; });
+      document.querySelectorAll("[data-next]").forEach(b=>{ const st=b.closest(".step"); if(st && st.dataset.step!=="0") b.disabled=true; });
       document.getElementById("maxHint").classList.remove("show");
       ["name","company","postcode","phone","email","wholesaler","note"].forEach(id=>document.getElementById(id).value="");
       formStatus.textContent="";
@@ -1356,13 +1379,7 @@
       showStep(0);
     }
     function startQuiz(){
-      const target=document.querySelector('[data-step="0"]');
-      if(!target) return;
-      const top=Math.max(0, target.getBoundingClientRect().top+(window.pageYOffset||document.documentElement.scrollTop||0)-12);
-      try{ window.scrollTo({top:top,behavior:"smooth"}); }catch(e){ window.scrollTo(0,top); }
-      if(window.parent && window.parent!==window){
-        window.parent.postMessage({type:"scroll-to-offset",offset:top},"https://www.la-streetfood.com");
-      }
+      scrollToElement(document.querySelector(".main-card"));
     }
     document.getElementById("heroStart").addEventListener("click",startQuiz);
     document.getElementById("restartTop").addEventListener("click",restart);
@@ -1390,7 +1407,10 @@
     }
 
     window.addEventListener("load", sendHeight);
-    new ResizeObserver(sendHeight).observe(document.body);
+    window.addEventListener("resize", sendHeight);
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(sendHeight).observe(document.body);
+    }
   </script>
 
 </body>
