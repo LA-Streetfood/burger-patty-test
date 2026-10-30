@@ -1069,11 +1069,20 @@
       const cardTop=Math.max(0,document.querySelector(".main-card").offsetTop-8);
       window.scrollTo({top:cardTop,behavior:"smooth"});
       if(window.parent && window.parent!==window){
-        /* Eerst de actuele hoogte doorgeven, dan pas vragen om te scrollen */
-        if (typeof sendHeight === "function") sendHeight(true);
+        const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+        if (touch) {
+          /* Telefoons/tablets: kap het kader heel even af net onder de bovenkant van de
+             kaart. De browser klemt de bezoeker dan vanzelf terug omhoog. Daarna wordt
+             de echte hoogte hersteld. Werkt met alleen het bestaande hoogte-script. */
+          window.__holdHeightUntil = Date.now() + 330;
+          window.parent.postMessage({type:"iframe-height",height:cardTop+320},"https://www.la-streetfood.com");
+          setTimeout(function(){ if (typeof sendHeight === "function") sendHeight(true); }, 350);
+        } else {
+          if (typeof sendHeight === "function") sendHeight(true);
+        }
         setTimeout(function(){
           window.parent.postMessage({type:"scroll-to-offset",offset:cardTop},"*");
-        }, 150);
+        }, touch ? 450 : 150);
       }
       if(n===8) renderResults();
     }
@@ -1391,6 +1400,8 @@
   <script>
     let lastSentHeight = 0;
     function sendHeight(force) {
+      /* Tijdens een hoogte-puls even niets versturen, zodat de puls kan landen */
+      if (Date.now() < (window.__holdHeightUntil || 0)) return;
       /* Meet de echte inhoud (de kaart), niet het venster: in een iframe kan
          body.scrollHeight nooit kleiner zijn dan het iframe zelf, waardoor de
          hoogte alleen maar groeit en er witruimte onder de inhoud ontstaat. */
