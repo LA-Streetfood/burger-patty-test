@@ -131,9 +131,9 @@
     .hint{
       margin-top:16px;
       background:#fff8dc;border:1px solid #f1d879;color:#6f5920;border-radius:14px;padding:12px 14px;
-      font-size:14px;display:none;
+      font-size:14px;display:block;visibility:hidden;
     }
-    .hint.show{display:block}
+    .hint.show{visibility:visible}
     .nav{
       margin-top:28px;display:flex;justify-content:space-between;gap:14px;align-items:center;
     }
@@ -1075,7 +1075,11 @@
       state.step=n;
       steps.forEach(s=>s.classList.toggle("active", Number(s.dataset.step)===n));
       updateProgress();
-      window.scrollTo({top:document.querySelector(".main-card").offsetTop-8,behavior:"smooth"});
+      const cardTop=Math.max(0,document.querySelector(".main-card").offsetTop-8);
+      window.scrollTo({top:cardTop,behavior:"smooth"});
+      if(window.parent && window.parent!==window){
+        window.parent.postMessage({type:"scroll-to-offset",offset:cardTop},"*");
+      }
       if(n===8) renderResults();
     }
 
@@ -1390,11 +1394,14 @@
   </script>
 
   <script>
+    let lastSentHeight = 0;
     function sendHeight() {
       const height = Math.max(
         document.body.scrollHeight,
         document.documentElement.scrollHeight
       );
+      if (Math.abs(height - lastSentHeight) < 2) return;
+      lastSentHeight = height;
 
       if (window.parent) {
         window.parent.postMessage(
