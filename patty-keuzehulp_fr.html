@@ -1071,18 +1071,34 @@
       if(window.parent && window.parent!==window){
         const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
         if (touch) {
-          /* Telefoons/tablets: kap het kader heel even af net onder de bovenkant van de
-             kaart. De browser klemt de bezoeker dan vanzelf terug omhoog. Daarna wordt
-             de echte hoogte hersteld. Werkt met alleen het bestaande hoogte-script. */
-          window.__holdHeightUntil = Date.now() + 330;
-          window.parent.postMessage({type:"iframe-height",height:cardTop+320},"https://www.la-streetfood.com");
-          setTimeout(function(){ if (typeof sendHeight === "function") sendHeight(true); }, 350);
+          /* Telefoons/tablets: laat het kader in ~0,3 s geleidelijk krimpen tot net onder
+             de bovenkant van de kaart. De browser klemt de bezoeker daardoor vloeiend
+             terug omhoog; daarna wordt de echte hoogte hersteld. Werkt met alleen het
+             bestaande hoogte-script van de site. */
+          const to = cardTop + 320;
+          const from = Math.max(to, lastSentHeight || to);
+          if (from > to) {
+            const t0 = Date.now(), dur = 300;
+            window.__holdHeightUntil = t0 + dur + 250;
+            (function glide(){
+              const p = Math.min(1, (Date.now() - t0) / dur);
+              const ease = 1 - Math.pow(1 - p, 3);
+              window.parent.postMessage({type:"iframe-height",height:Math.round(from + (to - from) * ease)},"https://www.la-streetfood.com");
+              if (p < 1) { requestAnimationFrame(glide); }
+              else {
+                setTimeout(function(){
+                  window.__holdHeightUntil = 0;
+                  if (typeof sendHeight === "function") sendHeight(true);
+                }, 150);
+              }
+            })();
+          } else if (typeof sendHeight === "function") { sendHeight(true); }
         } else {
           if (typeof sendHeight === "function") sendHeight(true);
+          setTimeout(function(){
+            window.parent.postMessage({type:"scroll-to-offset",offset:cardTop},"*");
+          }, 150);
         }
-        setTimeout(function(){
-          window.parent.postMessage({type:"scroll-to-offset",offset:cardTop},"*");
-        }, touch ? 450 : 150);
       }
       if(n===8) renderResults();
     }
