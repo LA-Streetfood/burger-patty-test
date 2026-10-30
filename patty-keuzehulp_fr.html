@@ -1045,8 +1045,25 @@
         state.step <= totalQuestions ? `Question ${state.step} sur ${totalQuestions}` : "Votre conseil est prêt";
     }
 
+    const sentEvents = new Set();
+    function trackEvent(name, params){
+      const key = name + JSON.stringify(params || {});
+      if (sentEvents.has(key)) return;
+      sentEvents.add(key);
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: "keuzehulp-event",
+          event: name,
+          params: Object.assign({ taal: document.documentElement.lang || "nl" }, params || {})
+        }, "*");
+      }
+    }
+
     function showStep(n){
       state.step=n;
+      if (n === 1) trackEvent("keuzehulp_start");
+      if (n >= 2 && n <= 8) trackEvent("keuzehulp_vraag", { vraag: n - 1 });
+      if (n === 8) trackEvent("keuzehulp_uitslag");
       steps.forEach(s=>s.classList.toggle("active", Number(s.dataset.step)===n));
       updateProgress();
       const cardTop=Math.max(0,document.querySelector(".main-card").offsetTop-8);
@@ -1332,6 +1349,7 @@
         }
 
         setFormStatus("Merci, votre formulaire a bien été envoyé.","success-message");
+        trackEvent("keuzehulp_aanvraag");
         sampleForm.reset();
       }catch(error){
         setFormStatus("Une erreur est survenue lors de l’envoi du formulaire. Veuillez réessayer plus tard.","error-message");
