@@ -1418,10 +1418,13 @@
   <script>
     let lastSentHeight = 0;
     function sendHeight(force) {
-      const height = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
-      );
+      /* Meet de echte inhoud (de kaart), niet het venster: in een iframe kan
+         body.scrollHeight nooit kleiner zijn dan het iframe zelf, waardoor de
+         hoogte alleen maar groeit en er witruimte onder de inhoud ontstaat. */
+      const shell = document.querySelector(".shell");
+      const height = shell
+        ? Math.ceil(shell.getBoundingClientRect().bottom + (window.pageYOffset || document.documentElement.scrollTop || 0))
+        : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
       if (!force && Math.abs(height - lastSentHeight) < 2) return;
       lastSentHeight = height;
 
@@ -1437,7 +1440,9 @@
     }
 
     window.addEventListener("load", function(){ sendHeight(true); });
-    new ResizeObserver(function(){ sendHeight(); }).observe(document.body);
+    const heightObserver = new ResizeObserver(function(){ sendHeight(); });
+    heightObserver.observe(document.body);
+    if (document.querySelector(".shell")) heightObserver.observe(document.querySelector(".shell"));
     /* Blijf de hoogte herhalen, zodat die ook aankomt als het site-script later start */
     setInterval(function(){ sendHeight(true); }, 1200);
   </script>
