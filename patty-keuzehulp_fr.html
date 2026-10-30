@@ -1069,7 +1069,11 @@
       const cardTop=Math.max(0,document.querySelector(".main-card").offsetTop-8);
       window.scrollTo({top:cardTop,behavior:"smooth"});
       if(window.parent && window.parent!==window){
-        window.parent.postMessage({type:"scroll-to-offset",offset:cardTop},"*");
+        /* Eerst de actuele hoogte doorgeven, dan pas vragen om te scrollen */
+        if (typeof sendHeight === "function") sendHeight(true);
+        setTimeout(function(){
+          window.parent.postMessage({type:"scroll-to-offset",offset:cardTop},"*");
+        }, 150);
       }
       if(n===8) renderResults();
     }
@@ -1386,15 +1390,15 @@
 
   <script>
     let lastSentHeight = 0;
-    function sendHeight() {
+    function sendHeight(force) {
       const height = Math.max(
         document.body.scrollHeight,
         document.documentElement.scrollHeight
       );
-      if (Math.abs(height - lastSentHeight) < 2) return;
+      if (!force && Math.abs(height - lastSentHeight) < 2) return;
       lastSentHeight = height;
 
-      if (window.parent) {
+      if (window.parent && window.parent !== window) {
         window.parent.postMessage(
           {
             type: "iframe-height",
@@ -1405,8 +1409,10 @@
       }
     }
 
-    window.addEventListener("load", sendHeight);
-    new ResizeObserver(sendHeight).observe(document.body);
+    window.addEventListener("load", function(){ sendHeight(true); });
+    new ResizeObserver(function(){ sendHeight(); }).observe(document.body);
+    /* Blijf de hoogte herhalen, zodat die ook aankomt als het site-script later start */
+    setInterval(function(){ sendHeight(true); }, 1200);
   </script>
 
 </body>
