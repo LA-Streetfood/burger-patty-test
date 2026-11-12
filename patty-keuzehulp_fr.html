@@ -735,8 +735,7 @@
           <h2>En moins de 2 minutes, vous savez quel burger est fait pour vous</h2>
           <p class="lead">Pas de discours commercial. Juste une première sélection intelligente pour avancer.</p>
           <div class="understanding">
-            <div class="bubble">👂</div>
-            <div><strong>On commence par écouter.</strong>Vos réponses déterminent quels burgers obtiennent un score plus élevé ou plus faible.</div>
+            <div>Vos réponses déterminent quels burgers obtiennent un score plus élevé ou plus faible.</div>
           </div>
           <div class="nav">
             <span></span>
@@ -1061,6 +1060,9 @@
 
     function showStep(n){
       state.step=n;
+      /* Vanaf vraag 1 verdwijnt het bovenste blok met de foto: de voortgangsbalk wordt de bovenkant */
+      const hero=document.querySelector(".hero");
+      if(hero) hero.style.display = n>=1 ? "none" : "";
       if (n === 1) trackEvent("keuzehulp_start");
       if (n >= 2 && n <= 8) trackEvent("keuzehulp_vraag", { vraag: n - 1 });
       if (n === 8) trackEvent("keuzehulp_uitslag");

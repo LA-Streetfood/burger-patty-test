@@ -761,8 +761,7 @@
           <h2>Binnen 2 minuten weet je welke burger voor jou gemaakt is</h2>
           <p class="lead">Geen verkooppraatje. Wel een slimme eerste selectie waarmee je verder kunt.</p>
           <div class="understanding">
-            <div class="bubble">👂</div>
-            <div><strong>We beginnen met luisteren.</strong>Je antwoorden bepalen welke burgers hoger of lager scoren.</div>
+            <div>Je antwoorden bepalen welke burgers hoger of lager scoren.</div>
           </div>
           <div class="nav">
             <a class="site-link" href="https://www.la-streetfood.com/nl" target="_blank" rel="noopener noreferrer">Naar la-streetfood.com ↗</a>
@@ -1087,6 +1086,9 @@
 
     function showStep(n){
       state.step=n;
+      /* Vanaf vraag 1 verdwijnt het bovenste blok met de foto: de voortgangsbalk wordt de bovenkant */
+      const hero=document.querySelector(".hero");
+      if(hero) hero.style.display = n>=1 ? "none" : "";
       if (n === 1) trackEvent("keuzehulp_start");
       if (n >= 2 && n <= 8) trackEvent("keuzehulp_vraag", { vraag: n - 1 });
       if (n === 8) trackEvent("keuzehulp_uitslag");
