@@ -714,7 +714,11 @@
 
     @media (max-width:800px){
       .nav{flex-wrap:wrap;gap:10px}
-      .nav-left{width:100%;justify-content:space-between;gap:8px}
+      /* Mobiel: Terug en Volgende samen op een regel, de sitelink eronder */
+      .nav-left{display:contents}
+      .nav [data-prev]{order:1}
+      .nav [data-next]{order:2;margin-left:auto}
+      .nav .site-link{order:3;width:100%;justify-content:center;text-align:center}
       .site-link{padding:10px 13px;font-size:14px}
       .product-link{width:100%;justify-content:center;text-align:center}
     }
