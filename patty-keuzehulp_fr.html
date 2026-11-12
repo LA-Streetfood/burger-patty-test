@@ -838,7 +838,7 @@
           <div class="result-intro">
             <div>
               <h2>Vos meilleurs matchs</h2>
-              <p class="lead" id="resultLead">Cette sélection est basée sur vos réponses.</p>
+              <p class="lead" id="resultLead">Retrouvez ci-dessous vos meilleurs matchs – demandez vos échantillons via le formulaire ci-dessous.</p>
             </div>
             <span class="badge">Top 3</span>
           </div>
@@ -1267,7 +1267,6 @@
             <div>${b.desc}</div>
             <ul class="why">${reasonsFor(b).map(r=>`<li>${r}</li>`).join("")}</ul>
             <div class="chips">${b.tags.map(t=>`<span class="chip">${t}</span>`).join("")}</div>
-            <label class="sample-select"><input type="checkbox" class="sampleCheck" value="${b.id}" checked> Deze wil ik als sample testen</label>
           </div>
         </article>
       `).join("");
@@ -1278,9 +1277,8 @@
     }
 
     function selectedSamples(){
-      const top=calculate();
-      const ids=[...document.querySelectorAll(".sampleCheck:checked")].map(c=>c.value);
-      return top.filter(b=>ids.includes(b.id));
+      /* Geen checkboxes meer: alle getoonde matches gaan mee met de aanvraag */
+      return calculate();
     }
 
     function buildMailBody(){
